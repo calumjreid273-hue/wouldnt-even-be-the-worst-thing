@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wouldn't Even Be the Worst Thing Ben's Done to Me</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0e0e0e; --surface: #141414; --border: #222; --border-hi: #3a3a3a;
+    --text: #e8e4dc; --muted: #555; --noun: #c8b88a; --verb: #8ab5c8; --other: #b88ab5;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; }
+  .page { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
+  header { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+  h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(3.5rem, 10vw, 6.5rem); line-height: 0.9; letter-spacing: 0.03em; }
+  .sub { font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); margin-top: 0.6rem; }
+  .output-wrap { border: 1px solid var(--border); background: var(--surface); padding: 2.5rem 2rem; margin-bottom: 1.5rem; min-height: 130px; display: flex; align-items: center; justify-content: center; position: relative; }
+  .output-wrap::before { content: 'GENERATED SENTENCE'; position: absolute; top: -0.6em; left: 1.2rem; font-size: 0.52rem; letter-spacing: 0.25em; color: var(--muted); background: var(--bg); padding: 0 0.4rem; }
+  #sentence { font-family: 'Bebas Neue', sans-serif; font-size: clamp(1.5rem, 4.5vw, 2.8rem); line-height: 1.25; text-align: center; display: flex; flex-wrap: wrap; gap: 0 0.35em; justify-content: center; align-items: baseline; }
+  .chunk { cursor: pointer; transition: opacity 0.12s; position: relative; padding-bottom: 0.15em; }
+  .chunk:hover { opacity: 0.45; }
+  .chunk::after { content: attr(data-label); position: absolute; bottom: -1.15em; left: 50%; transform: translateX(-50%); font-family: 'DM Mono', monospace; font-size: 0.32rem; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.7; }
+  .c-noun { color: var(--noun); } .c-noun::after { color: var(--noun); }
+  .c-verb { color: var(--verb); } .c-verb::after { color: var(--verb); }
+  .c-other { color: var(--other); } .c-other::after { color: var(--other); }
+  .empty { font-size: 0.7rem; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; font-family: 'DM Mono', monospace; }
+  .controls { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 2.5rem; align-items: center; }
+  .btn { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; background: transparent; border: 1px solid var(--border-hi); color: var(--text); padding: 0.55rem 1.2rem; cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+  .btn:hover { background: #1e1e1e; border-color: var(--text); }
+  .btn:active { opacity: 0.6; }
+  .btn.big { border-color: var(--text); padding: 0.7rem 2rem; font-size: 0.65rem; }
+  .btn[data-locked="true"] { border-color: var(--verb); color: var(--verb); }
+  .save-btn { margin-left: auto; border-color: var(--border); color: var(--muted); }
+  .save-btn:hover { border-color: var(--text); color: var(--text); }
+  #saved-sec { display: none; margin-top:2rem; }
+  #saved-sec.show { display: block; }
+  .sec-head { font-size: 0.52rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: 0.6rem; margin-bottom: 1rem; }
+  .saved-ul { list-style: none; }
+  .saved-ul li { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #181818; }
+  .saved-ul li span { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 0.04em; color: var(--muted); }
+  .saved-ul li:hover span { color: var(--text); }
+  .del { background: none; border: none; color: var(--border-hi); cursor: pointer; font-size: 1.1rem; line-height: 1; }
+  .del:hover { color: var(--text); }
+  .hint { font-size: 0.55rem; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 2.5rem; }
+  @keyframes pop { from { opacity: 0.2; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+  .pop { animation: pop 0.2s ease-out; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Wouldn't Even Be<br>the Worst Thing Ben's Done to Me</h1>
+    <p class="sub">Customisable sentences with nouns & verbs</p>
+  </header>
+
+  <div class="output-wrap">
+    <div id="sentence"><span class="empty">press randomise</span></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn big" onclick="generate()">Randomise</button>
+    <button class="btn" id="lockNoun" data-locked="false" onclick="toggleLock('noun')">Lock Noun</button>
+    <button class="btn" id="lockVerb" data-locked="false" onclick="toggleLock('verb')">Lock Verb</button>
+    <button class="btn save-btn" onclick="saveSentence()">Save ↓</button>
+  </div>
+
+  <p class="hint">Click any coloured word to reroll just that part.</p>
+
+  <div id="saved-sec">
+    <p class="sec-head">Saved sentences</p>
+    <ul class="saved-ul" id="saved-ul"></ul>
+  </div>
+</div>
+
+<script>
+// Openers
+const OPENERS = [
+  "I know my way around a {Noun}",
+  "Mum its the {Noun} i swear!",
+  "I guess im just the {Noun} of this {Noun}",
+  "Who likes {Noun}? This Guy!",
+  "Im off to the {Noun}",
+  "Stop saying im {Verb} my {Noun}",
+  "I like the slow burn {Noun} not the fast release {Noun}",
+  "I feel it the {Noun}'s high!!!",
+  "You take the {Noun} and latheerrrrr it on",
+  "Who likes {Verb} {Noun} for fun??? This guy!!",
+  "I guess i just cant have {Noun} anymore??",
+  "Wouldnt even be the worst thing {Noun} done to me."
+];
+
+// Nouns & Verbs
+const NOUNS = [
+  "chopping block","flipping bin","bin boy","James Rance","younger brother",
+  "litter","saftey","punching bag","wood","MonsterDragonXXL","FruitShoots",
+  "CapriSuns","Tacklers","Solder sucker","Ben"
+];
+const VERBS = ["Cracking","Sucking","lathering","Punching"];
+
+// State
+const sel = { noun: null, noun2:null, verb:null };
+const lock = { noun:false, noun2:false, verb:false };
+let currentTemplate = null;
+
+// Helpers
+function pick(arr, current){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+// Generate sentence
+function generate(){
+  currentTemplate = pick(OPENERS);
+  if(currentTemplate.includes("{Noun}") && !lock.noun) sel.noun = pick(NOUNS);
+  if(currentTemplate.split("{Noun}").length>2 && !lock.noun2) sel.noun2 = pick(NOUNS);
+  if(currentTemplate.includes("{Verb}") && !lock.verb) sel.verb = pick(VERBS);
+  render();
+}
+
+// Render sentence
+function render(){
+  let sentence = currentTemplate;
+  sentence = sentence.replace("{Noun}", sel.noun||"");
+  if(sel.noun2) sentence = sentence.replace("{Noun}", sel.noun2);
+  sentence = sentence.replace("{Verb}", sel.verb||"");
+  
+  const el = document.getElementById("sentence");
+  el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
+  
+  el.innerHTML = sentence.split(" ").map(word=>{
+    let cls="", label="";
+    if(word===sel.noun || word===sel.noun2){ cls="c-noun"; label="Noun"; }
+    else if(word===sel.verb){ cls="c-verb"; label="Verb"; }
+    else{ cls="c-other"; label="Other"; }
+    return `<span class="chunk ${cls}" data-label="${label}" onclick="rerollWord('${word}')">${word}</span>`;
+  }).join(" ");
+}
+
+// Reroll individual word
+function rerollWord(word){
+  if(word===sel.noun && !lock.noun) sel.noun = pick(NOUNS);
+  else if(word===sel.noun2 && !lock.noun2) sel.noun2 = pick(NOUNS);
+  else if(word===sel.verb && !lock.verb) sel.verb = pick(VERBS);
+  render();
+}
+
+// Lock toggle
+function toggleLock(type){
+  lock[type] = !lock[type];
+  const btn = document.getElementById(type==="noun"?"lockNoun":"lockVerb");
+  btn.dataset.locked = lock[type];
+  btn.textContent = (lock[type]?"Unlock ":"Lock ") + (type==="noun"?"Noun":"Verb");
+}
+
+// Save
+function saveSentence(){
+  const sentence = document.getElementById("sentence").innerText;
+  if(!sentence) return;
+  const ul = document.getElementById("saved-ul");
+  const li = document.createElement("li");
+  li.innerHTML = `<span>${sentence}</span><button class="del" onclick="this.closest('li').remove();if(!document.querySelectorAll('#saved-ul li').length)document.getElementById('saved-sec').classList.remove('show')">×</button>`;
+  ul.prepend(li);
+  document.getElementById("saved-sec").classList.add("show");
+}
+
+// Keyboard shortcuts
+document.addEventListener("keydown",e=>{
+  if(e.code==="Space"){ e.preventDefault(); generate(); }
+  if((e.metaKey||e.ctrlKey) && e.code==="KeyS"){ e.preventDefault(); saveSentence(); }
+});
+</script>
+</body>
+</html>
